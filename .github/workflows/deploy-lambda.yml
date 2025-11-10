@@ -5,6 +5,7 @@ on:
     branches: [ main ]
     paths:
       - "lambdas/profile-service/**"
+  workflow_dispatch:
 
 permissions:
   id-token: write     # needed for AWS OIDC
