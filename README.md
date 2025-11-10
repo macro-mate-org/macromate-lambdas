@@ -86,13 +86,3 @@ sam local invoke <FunctionName> -e events/test-event.json
 
 ---
 
-## 🧹 Cleanup
-
-Old Lambda zips are automatically cleaned up by S3 lifecycle rules (after 30 days).
-You can safely remove old versions locally with:
-
-```bash
-rm -rf build/
-```
-
----
