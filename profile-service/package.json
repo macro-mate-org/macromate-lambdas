@@ -1,0 +1,19 @@
+{
+  "name": "macromate-profile-service",
+  "version": "1.0.0",
+  "description": "Serverless Profile Service for MacroMate (Node.js + AWS Lambda + DynamoDB)",
+  "main": "handler.js",
+  "type": "module",
+  "scripts": {
+    "test": "node tests/handler.test.js",
+    "zip": "zip -r ../../build/profile-service.zip ."
+  },
+  "dependencies": {
+    "aws-sdk": "^2.1415.0",
+    "jsonwebtoken": "^9.0.2",
+    "jwks-rsa": "^3.0.1"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
