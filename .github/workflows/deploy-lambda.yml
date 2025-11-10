@@ -1,0 +1,77 @@
+name: Build and Upload Lambda Artifact
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - "lambdas/profile-service/**"
+
+permissions:
+  id-token: write     # needed for AWS OIDC
+  contents: read
+
+env:
+  AWS_REGION: us-east-1
+  SERVICE_NAME: profile-service
+  ENVIRONMENT: dev
+  PROJECT_NAME: macromate
+  BUILD_DIR: build
+
+jobs:
+  package-and-upload:
+    name: Package Lambda and Upload to S3
+    runs-on: ubuntu-latest
+
+    steps:
+      # Checkout repository
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # Setup Node.js
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "18"
+
+      # Install dependencies (no dev)
+      - name: Install dependencies
+        working-directory: ./lambdas/${{ env.SERVICE_NAME }}
+        run: npm ci --omit=dev
+
+      # Package Lambda into zip
+      - name: Package Lambda
+        working-directory: ./lambdas/${{ env.SERVICE_NAME }}
+        run: |
+          mkdir -p ../../${{ env.BUILD_DIR }}
+          zip -r ../../${{ env.BUILD_DIR }}/${{ env.SERVICE_NAME }}.zip .
+
+      # Configure AWS credentials via OIDC
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::${{ secrets.AWS_ACCOUNT_ID }}:role/GitHubOIDCDeployRole
+          aws-region: ${{ env.AWS_REGION }}
+
+      # Fetch Lambda Artifact Bucket from Terraform naming convention
+      - name: Fetch Lambda Artifact Bucket
+        id: get-bucket
+        run: |
+          BUCKET=$(aws s3api list-buckets \
+            --query "Buckets[?contains(Name, '${{ env.PROJECT_NAME }}-${{ env.ENVIRONMENT }}-lambda-artifacts')].Name" \
+            --output text)
+          echo "BUCKET_NAME=$BUCKET" >> $GITHUB_ENV
+          echo "Found bucket: $BUCKET"
+
+      # Upload the Lambda zip to S3
+      - name: Upload Lambda Zip to S3
+        run: |
+          TIMESTAMP=$(date +%Y%m%d%H%M%S)
+          S3_KEY="${{ env.SERVICE_NAME }}/${TIMESTAMP}.zip"
+          aws s3 cp ${{ env.BUILD_DIR }}/${{ env.SERVICE_NAME }}.zip \
+            s3://$BUCKET_NAME/$S3_KEY --region ${{ env.AWS_REGION }}
+          echo "S3_KEY=$S3_KEY" >> $GITHUB_ENV
+          echo "Uploaded Lambda to s3://$BUCKET_NAME/$S3_KEY"
+
+      # Output Lambda S3 Path
+      - name: Output Lambda S3 Path
+        run: echo "Lambda uploaded to s3://$BUCKET_NAME/${{ env.S3_KEY }}"
