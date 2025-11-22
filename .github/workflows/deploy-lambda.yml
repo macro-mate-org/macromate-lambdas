@@ -4,7 +4,7 @@ on:
   push:
     branches: [ main ]
     paths:
-      - "lambdas/profile-service/**"
+      - "macromate-lambdas/profile-service/**"
   workflow_dispatch:
 
 permissions:
@@ -36,12 +36,12 @@ jobs:
 
       # Install dependencies (no dev)
       - name: Install dependencies
-        working-directory: ./lambdas/${{ env.SERVICE_NAME }}
+        working-directory: ./macromate-lambdas/${{ env.SERVICE_NAME }}
         run: npm ci --omit=dev
 
       # Package Lambda into zip
       - name: Package Lambda
-        working-directory: ./lambdas/${{ env.SERVICE_NAME }}
+        working-directory: ./macromate-lambdas/${{ env.SERVICE_NAME }}
         run: |
           mkdir -p ../../${{ env.BUILD_DIR }}
           zip -r ../../${{ env.BUILD_DIR }}/${{ env.SERVICE_NAME }}.zip .
